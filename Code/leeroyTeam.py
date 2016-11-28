@@ -16,6 +16,7 @@ Eventually they will converge in the middle
 
 TODOs that will fix this code, currently it loses every time to the baselineTeam
 - make it go back to its own side every once in a while to 'cash in' the pellets it has
+- account for that noisyDistance thing in our ghost distance formula
 
 WEAKNESSES
 - willingly goes into closed spaces to avoid ghosts but is actually trapping itself
