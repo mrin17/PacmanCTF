@@ -65,8 +65,6 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
     if onDefense and not myState.scaredTimer > 0:
         features['ghostDistance'] = -features['ghostDistance']
     
-    ## TODO - if you have a power pellet, dont care about the above at all
-    
     if action == Directions.STOP: 
         features['stop'] = 1
     
