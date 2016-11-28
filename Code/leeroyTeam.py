@@ -70,10 +70,13 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
     if action == Directions.STOP: 
         features['stop'] = 1
     
+    # Seems to not work as I intended it to
+    features['legalActions'] = len(gameState.getLegalActions(self.index))
+    
     return features
 
   def getWeights(self, gameState, action):
-    return {'successorScore': 100, 'leeroyDistanceToFood': -1, 'ghostDistance': 100, 'stop': -1000 }
+    return {'successorScore': 100, 'leeroyDistanceToFood': -1, 'ghostDistance': 100, 'stop': -1000, 'legalActions': 100 }
 
   def getLeeroyDistance(self, myPos, food):
       return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
