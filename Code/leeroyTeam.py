@@ -48,19 +48,17 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
     ###
     ### DEFENSIVE GHOST AVOIDANCE STUFF
     ###
-    onDefense = True
-    if myState.isPacman:
-        onDefense = False
+    onDefense = not myState.isPacman
 
+    features['ghostDistance'] = 0
     # Computes distance to enemy ghosts we can see
     enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
-    ghosts = [a for a in enemies if not a.isPacman and a.getPosition() != None]
+    ghosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
     if len(ghosts) > 0:
       dists = [self.getMazeDistance(myPos, a.getPosition()) for a in ghosts]
       smallestDist = min(dists)
-      if smallestDist > 4:
-          smallestDist = 0
-      features['ghostDistance'] = smallestDist
+      if smallestDist < 5:
+          features['ghostDistance'] = smallestDist
     
     # If we are on defense, negate this value
     if onDefense:
