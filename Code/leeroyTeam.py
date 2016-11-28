@@ -5,6 +5,7 @@ import random, time, util, sys
 from game import Directions
 import game
 from util import nearestPoint
+from game import Actions
 
 '''
 Leeroy Agents
@@ -69,7 +70,12 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
         features['stop'] = 1
     
     # Seems to not work as I intended it to
-    features['legalActions'] = len(gameState.getLegalActions(self.index))
+    legalActions = gameState.getLegalActions(self.index)
+    features['legalActions'] = len(legalActions)
+    for legalAction in legalActions:
+        newState = self.getSuccessor(gameState, legalAction).getAgentState(self.index)
+        possibleNewActions = Actions.getPossibleActions( newState.configuration, gameState.data.layout.walls )
+        features['legalActions'] += len(possibleNewActions)
     
     return features
 
