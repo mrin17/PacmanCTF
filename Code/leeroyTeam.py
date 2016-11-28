@@ -18,9 +18,6 @@ Eventually they will converge in the middle
 TODOs that will fix this code, currently it loses every time to the baselineTeam
 - make it go back to its own side every once in a while to 'cash in' the pellets it has
 - account for that noisyDistance thing in our ghost distance formula
-
-WEAKNESSES
-- willingly goes into closed spaces to avoid ghosts but is actually trapping itself
 '''
 def createTeam(firstIndex, secondIndex, isRed,
                first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent'):
@@ -42,34 +39,39 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
     features['successorScore'] = -len(foodList)#self.getScore(successor)
 
     # Compute distance to the nearest food
+    # uses leeroy distance so its prioritizes either top or bottom food
     if len(foodList) > 0: # This should always be True,  but better safe than sorry
         myPos = successor.getAgentState(self.index).getPosition()
         leeroyDistance = min([self.getLeeroyDistance(myPos, food) for food in foodList])
         features['leeroyDistanceToFood'] = leeroyDistance
       
-    ###
-    ### DEFENSIVE GHOST AVOIDANCE STUFF
-    ###
+    # If we are on our side
     onDefense = not myState.isPacman
 
-    features['ghostDistance'] = 0
-    # Computes distance to enemy ghosts we can see
+    # Grab all non-scared enemy ghosts we can see
     enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
     ghosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
     if len(ghosts) > 0:
-      dists = [self.getMazeDistance(myPos, a.getPosition()) for a in ghosts]
-      smallestDist = min(dists)
-      if smallestDist < 6:
-          features['ghostDistance'] = smallestDist
+        # Computes distance to enemy ghosts we can see
+        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in ghosts]
+        # Use the smallest distance
+        smallestDist = min(dists)
+        # Only track it if the ghostDistance is smaller than X
+        if smallestDist < 6:
+            features['ghostDistance'] = smallestDist
     
     # If we are on defense and we are not scared, negate this value
-    if onDefense and not myState.scaredTimer > 0:
-        features['ghostDistance'] = -features['ghostDistance']
+    # So that we move closer to pacmen we can see
+    # Doesn't work because ghosts are not pacmen
+    #if onDefense and not myState.scaredTimer > 0:
+        #features['ghostDistance'] = -features['ghostDistance']
     
+    # Heavily prioritize not stopping
     if action == Directions.STOP: 
         features['stop'] = 1
     
-    # Seems to not work as I intended it to
+    # The total of the legalActions you can take from where you are AND
+    # The legalActions you can take in all future states
     legalActions = gameState.getLegalActions(self.index)
     features['legalActions'] = len(legalActions)
     for legalAction in legalActions:
