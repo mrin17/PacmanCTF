@@ -57,11 +57,11 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
     if len(ghosts) > 0:
       dists = [self.getMazeDistance(myPos, a.getPosition()) for a in ghosts]
       smallestDist = min(dists)
-      if smallestDist < 5:
+      if smallestDist < 6:
           features['ghostDistance'] = smallestDist
     
-    # If we are on defense, negate this value
-    if onDefense:
+    # If we are on defense and we are not scared, negate this value
+    if onDefense and not myState.scaredTimer > 0:
         features['ghostDistance'] = -features['ghostDistance']
     
     ## TODO - if you have a power pellet, dont care about the above at all
