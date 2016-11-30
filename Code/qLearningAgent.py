@@ -72,6 +72,8 @@ class ApproximateQAgent(CaptureAgent):
         successor = self.getSuccessor(gameState, action)
         features = util.Counter()
         features['score'] = self.getScore(successor)
+        if not self.red:
+            features['score'] *= -1
         features['choices'] = len(successor.getLegalActions(self.index))
         return features
 
@@ -81,7 +83,6 @@ class ApproximateQAgent(CaptureAgent):
           are no legal actions, which is the case at the terminal state,
           you should return None.
         """
-        "*** YOUR CODE HERE ***"
         bestValue = -999999
         bestActions = None
         for action in state.getLegalActions(self.index):
@@ -111,7 +112,6 @@ class ApproximateQAgent(CaptureAgent):
           there are no legal actions, which is the case at the
           terminal state, you should return a value of 0.0.
         """
-        "*** YOUR CODE HERE ***"
         bestValue = -999999
         noLegalActions = True
         for action in state.getLegalActions(self.index):
@@ -140,7 +140,10 @@ class ApproximateQAgent(CaptureAgent):
         return total
 
     def getReward(self, gameState):
-        return gameState.getScore()
+        redModifier = 1
+        if not self.red:
+            redModifier = -1
+        return gameState.getScore() * redModifier
 
     def observationFunction(self, gameState):
         if len(self.observationHistory) > 0:
