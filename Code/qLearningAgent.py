@@ -174,17 +174,19 @@ class ApproximateQAgent(CaptureAgent):
         difference = (reward + self.discount * self.computeValueFromQValues(nextState))
         difference -= self.getQValue(state, action)
         # Only calculate the difference once, not in the loop.
+        newWeights = self.weights.copy()
         # Same with weights and features. 
         features = self.getFeatures(state, action)
         for featureValues in features:
             # Implements the weight updating calculations
-            self.weights[featureValues] += self.alpha * difference * features[featureValues]
-
+            newWeights[featureValues] += self.alpha * difference * features[featureValues]
+        self.weights = newWeights.copy()
 
     def final(self, state):
         "Called at the end of each game."
         # call the super-class final method
         CaptureAgent.final(self, state)
+        print self.weights
 
         try:
             self.episodesSoFar += 1

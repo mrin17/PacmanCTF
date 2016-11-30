@@ -28,7 +28,12 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   
   def registerInitialState(self, gameState):
     ApproximateQAgent.registerInitialState(self, gameState)
-    self.weights = {'successorScore': 100, 'leeroyDistanceToFood': -1, 'ghostDistance': 5, 'stop': -1000, 'legalActions': 100 }
+    self.weights['successorScore'] = 100
+    self.weights['leeroyDistanceToFood'] = -1
+    self.weights['ghostDistance'] = 5
+    self.weights['stop'] = -1000
+    self.weights['legalActions'] = 100
+    print self.weights
     self.favoredY = 0.0
   
   def getFeatures(self, gameState, action):
