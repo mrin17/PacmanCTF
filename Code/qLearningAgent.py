@@ -63,6 +63,23 @@ class ApproximateQAgent(CaptureAgent):
                 action = self.computeActionFromQValues(state)
 
         self.lastAction = action
+        """ 
+        TODO
+        ReflexCaptureAgent has some code that returns to your side if there are less than 2 pellets
+        We added that here
+        """
+        foodLeft = len(self.getFood(state).asList())
+
+        if foodLeft <= 2:
+            bestDist = 9999
+            for a in legalActions:
+                successor = self.getSuccessor(state, a)
+                pos2 = successor.getAgentPosition(self.index)
+                dist = self.getMazeDistance(self.start,pos2)
+                if dist < bestDist:
+                    action = a
+                    bestDist = dist
+
         return action
 
     def getFeatures(self, gameState, action):
@@ -98,7 +115,7 @@ class ApproximateQAgent(CaptureAgent):
             elif value == bestValue:
                 bestActions.append(action)
         if bestActions == None:
-            return None # If no legal actions return None
+            return Directions.STOP # If no legal actions return None
         return random.choice(bestActions) # Else choose one of the best actions randomly
 
 
@@ -158,11 +175,10 @@ class ApproximateQAgent(CaptureAgent):
         difference -= self.getQValue(state, action)
         # Only calculate the difference once, not in the loop.
         # Same with weights and features. 
-        weights = self.getWeights()
         features = self.getFeatures(state, action)
         for featureValues in features:
             # Implements the weight updating calculations
-            weights[featureValues] += self.alpha * difference * features[featureValues]
+            self.weights[featureValues] += self.alpha * difference * features[featureValues]
 
 
     def final(self, state):

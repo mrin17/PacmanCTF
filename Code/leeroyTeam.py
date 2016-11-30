@@ -6,6 +6,7 @@ from game import Directions
 import game
 from util import nearestPoint
 from game import Actions
+from qLearningAgent import ApproximateQAgent
 
 '''
 Leeroy Agents
@@ -20,13 +21,13 @@ TODOs that will fix this code, currently it loses every time to the baselineTeam
 - account for that noisyDistance thing in our ghost distance formula
 '''
 def createTeam(firstIndex, secondIndex, isRed,
-               first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent'):
+               first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent', **args):
   return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
-class LeeroyCaptureAgent(ReflexCaptureAgent):
+class LeeroyCaptureAgent(ApproximateQAgent):
   
   def registerInitialState(self, gameState):
-    ReflexCaptureAgent.registerInitialState(self, gameState)
+    ApproximateQAgent.registerInitialState(self, gameState)
     self.weights = {'successorScore': 100, 'leeroyDistanceToFood': -1, 'ghostDistance': 5, 'stop': -1000, 'legalActions': 100 }
     self.favoredY = 0.0
   
@@ -57,6 +58,7 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
         # Use the smallest distance
         smallestDist = min(dists)
         # Only track it if the ghostDistance is smaller than X
+        features['ghostDistance'] = smallestDist
     
     # If we are on defense and we are not scared, negate this value
     # So that we move closer to pacmen we can see
@@ -79,7 +81,7 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
     
     return features
 
-  def getWeights(self, gameState, action):
+  def getWeights(self):
     return self.weights
 
   def getLeeroyDistance(self, myPos, food):
