@@ -83,7 +83,6 @@ class ApproximateQAgent(CaptureAgent):
           are no legal actions, which is the case at the terminal state,
           you should return None.
         """
-        "*** YOUR CODE HERE ***"
         bestValue = -999999
         bestActions = None
         for action in state.getLegalActions(self.index):
@@ -113,7 +112,6 @@ class ApproximateQAgent(CaptureAgent):
           there are no legal actions, which is the case at the
           terminal state, you should return a value of 0.0.
         """
-        "*** YOUR CODE HERE ***"
         bestValue = -999999
         noLegalActions = True
         for action in state.getLegalActions(self.index):
