@@ -141,7 +141,7 @@ class ApproximateQAgent(CaptureAgent):
 
     def getReward(self, gameState):
         redModifier = 1
-        if !self.red:
+        if not self.red:
             redModifier = -1
         return gameState.getScore() * redModifier
 
