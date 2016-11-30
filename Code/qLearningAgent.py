@@ -72,6 +72,8 @@ class ApproximateQAgent(CaptureAgent):
         successor = self.getSuccessor(gameState, action)
         features = util.Counter()
         features['score'] = self.getScore(successor)
+        if not self.red:
+            features['score'] *= -1
         features['choices'] = len(successor.getLegalActions(self.index))
         return features
 
@@ -140,7 +142,10 @@ class ApproximateQAgent(CaptureAgent):
         return total
 
     def getReward(self, gameState):
-        return gameState.getScore()
+        redModifier = 1
+        if !self.red:
+            redModifier = -1
+        return gameState.getScore() * redModifier
 
     def observationFunction(self, gameState):
         if len(self.observationHistory) > 0:
