@@ -26,8 +26,8 @@ def createTeam(firstIndex, secondIndex, isRed,
 class LeeroyCaptureAgent(ReflexCaptureAgent):
   
   def registerInitialState(self, gameState):
-    self.start = gameState.getAgentPosition(self.index)
-    CaptureAgent.registerInitialState(self, gameState)
+    ReflexCaptureAgent.registerInitialState(self, gameState)
+    self.weights = {'successorScore': 100, 'leeroyDistanceToFood': -1, 'ghostDistance': 5, 'stop': -1000, 'legalActions': 100 }
     self.favoredY = 0.0
   
   def getFeatures(self, gameState, action):
@@ -80,7 +80,7 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
     return features
 
   def getWeights(self, gameState, action):
-    return {'successorScore': 100, 'leeroyDistanceToFood': -1, 'ghostDistance': 5, 'stop': -1000, 'legalActions': 100 }
+    return self.weights
 
   def getLeeroyDistance(self, myPos, food):
       return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
@@ -89,14 +89,12 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
 class LeeroyTopAgent(LeeroyCaptureAgent):
     
   def registerInitialState(self, gameState):
-    self.start = gameState.getAgentPosition(self.index)
-    CaptureAgent.registerInitialState(self, gameState)
+    LeeroyCaptureAgent.registerInitialState(self, gameState)
     self.favoredY = gameState.data.layout.height
     
 # Leeroy Bottom Agent - favors pellets with a lower y
 class LeeroyBottomAgent(LeeroyCaptureAgent):
     
   def registerInitialState(self, gameState):
-    self.start = gameState.getAgentPosition(self.index)
-    CaptureAgent.registerInitialState(self, gameState)
+    LeeroyCaptureAgent.registerInitialState(self, gameState)
     self.favoredY = 0.0
