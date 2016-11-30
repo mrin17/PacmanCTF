@@ -57,8 +57,6 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
         # Use the smallest distance
         smallestDist = min(dists)
         # Only track it if the ghostDistance is smaller than X
-        if smallestDist < 6:
-            features['ghostDistance'] = smallestDist
     
     # If we are on defense and we are not scared, negate this value
     # So that we move closer to pacmen we can see
@@ -82,7 +80,7 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
     return features
 
   def getWeights(self, gameState, action):
-    return {'successorScore': 100, 'leeroyDistanceToFood': -1, 'ghostDistance': 100, 'stop': -1000, 'legalActions': 100 }
+    return {'successorScore': 100, 'leeroyDistanceToFood': -1, 'ghostDistance': 5, 'stop': -1000, 'legalActions': 100 }
 
   def getLeeroyDistance(self, myPos, food):
       return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])

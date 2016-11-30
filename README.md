@@ -3,6 +3,8 @@ Pacman Capture The Flag project for CS4100 AI
 
 Calvin Pomerantz, Lyn Kotuby, Michael Rinaldi
 
+### Playing A Game After Training (9 rounds of training, 1 game)
+```python capture.py -r qLearningTeam -b qLearningTeam -x 9 -n 10```
 
 ### How to play game:
 - By default, you can run a game with the simple baselineTeam that the staff has provided:
