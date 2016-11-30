@@ -40,6 +40,18 @@ class ApproximateQAgent(CaptureAgent):
         self.numTraining = 0
         CaptureAgent.registerInitialState(self, gameState)
 
+    def getSuccessor(self, gameState, action):
+        """
+        Finds the next successor which is a grid position (location tuple).
+        """
+        successor = gameState.generateSuccessor(self.index, action)
+        pos = successor.getAgentState(self.index).getPosition()
+        if pos != nearestPoint(pos):
+          # Only half a grid position was covered
+          return successor.generateSuccessor(self.index, action)
+        else:
+          return successor
+
     def chooseAction(self, state):
         # Pick Action
         legalActions = state.getLegalActions(self.index)
@@ -57,8 +69,10 @@ class ApproximateQAgent(CaptureAgent):
         """
         Returns a counter of features for the state
         """
+        successor = self.getSuccessor(gameState, action)
         features = util.Counter()
-        features['score'] = self.getScore(gameState)
+        features['score'] = self.getScore(successor)
+        features['choices'] = len(successor.getLegalActions(self.index))
         return features
 
     def computeActionFromQValues(self, state):
