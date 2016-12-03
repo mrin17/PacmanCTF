@@ -10,6 +10,8 @@ from game import Actions
 # Team creation #
 #################
 
+DEBUG = True
+
 def createTeam(firstIndex, secondIndex, isRed,
                first = 'ApproximateQAgent', second = 'ApproximateQAgent', **args):
   """
@@ -62,11 +64,18 @@ class ApproximateQAgent(CaptureAgent):
         # Pick Action
         legalActions = state.getLegalActions(self.index)
         action = None
+        if (DEBUG):
+            print self.newline()
+            print "AGENT " + str(self.index) + " choosing action!"
         if len(legalActions):
             if util.flipCoin(self.epsilon) and self.isTraining():
                 action = random.choice(legalActions)
+                if (DEBUG):
+                    print "ACTION CHOSE FROM RANDOM: " + action
             else:
                 action = self.computeActionFromQValues(state)
+                if (DEBUG):
+                    print "ACTION CHOSE FROM Q VALUES: " + action
 
         self.lastAction = action
         """ 
@@ -86,6 +95,8 @@ class ApproximateQAgent(CaptureAgent):
                     action = a
                     bestDist = dist
 
+        if (DEBUG):
+            print "AGENT " + str(self.index) + " chose action " + action + "!"
         return action
 
     def getFeatures(self, gameState, action):
@@ -115,6 +126,8 @@ class ApproximateQAgent(CaptureAgent):
             # If the action is tied for best, then add it to
             # the list of actions with the best value.
             value = self.getQValue(state, action)
+            if (DEBUG):
+                print "ACTION: " + action + "           QVALUE: " + str(value)
             if value > bestValue:
                 bestActions = [action]
                 bestValue = value
@@ -157,20 +170,14 @@ class ApproximateQAgent(CaptureAgent):
         total = 0
         weights = self.getWeights()
         features = self.getFeatures(state, action)
-        #print "WEIGHTS"
-        #print weights
-        #print "FEATURES"
-        #print features
         for feature in features:
             # Implements the Q calculation
             total += features[feature] * weights[feature]
         return total
 
     def getReward(self, gameState):
-        redModifier = 1
-        if not self.red:
-            redModifier = -1
-        return gameState.getScore() * redModifier
+        foodList = self.getFood(gameState).asList()
+        return -len(foodList)
 
     def observationFunction(self, gameState):
         if len(self.observationHistory) > 0 and self.isTraining():
@@ -184,6 +191,11 @@ class ApproximateQAgent(CaptureAgent):
         """
            Should update your weights based on transition
         """
+        if (DEBUG):
+            print self.newline()
+            print "AGENT " + str(self.index) + " updating weights!"
+            print "Q VALUE FOR NEXT STATE: " + str(self.computeValueFromQValues(nextState))
+            print "Q VALUE FOR CURRENT STATE: " + str(self.getQValue(state, action))
         difference = (reward + self.discount * self.computeValueFromQValues(nextState))
         difference -= self.getQValue(state, action)
         # Only calculate the difference once, not in the loop.
@@ -192,16 +204,22 @@ class ApproximateQAgent(CaptureAgent):
         features = self.getFeatures(state, action)
         for feature in features:
             # Implements the weight updating calculations
-            newWeights[feature] += self.alpha * difference * features[feature]
+            newWeight = newWeights[feature] + self.alpha * difference * features[feature]
+            if (DEBUG):
+                print "AGENT " + str(self.index) + " weights for " + feature + ": " + str(newWeights[feature]) + " ---> " + str(newWeight)
+            newWeights[feature]  = newWeight
         self.weights = newWeights.copy()
-        print "WEIGHTS AFTER UPDATE"
-        print self.weights
+        #print "WEIGHTS AFTER UPDATE"
+        #print self.weights
+
+    def newline(self):
+        return "-------------------------------------------------------------------------"
 
     def final(self, state):
         "Called at the end of each game."
         # call the super-class final method
         CaptureAgent.final(self, state)
-        if self.isTraining():
+        if self.isTraining() and DEBUG:
             print "END WEIGHTS"
             print self.weights
         self.episodesSoFar += 1
