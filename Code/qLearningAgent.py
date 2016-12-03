@@ -30,14 +30,18 @@ def createTeam(firstIndex, secondIndex, isRed,
 
 class ApproximateQAgent(CaptureAgent):
 
-    def registerInitialState(self, gameState):
-        self.start = gameState.getAgentPosition(self.index)
-        self.lastAction = None
+    def __init__( self, index ):
+        CaptureAgent.__init__(self, index)
         self.weights = util.Counter()
+        self.numTraining = 2
+        self.episodesSoFar = 0
         self.epsilon = 0.05
         self.discount = 0.8
         self.alpha = 0.2
-        self.numTraining = 0
+
+    def registerInitialState(self, gameState):
+        self.start = gameState.getAgentPosition(self.index)
+        self.lastAction = None
         CaptureAgent.registerInitialState(self, gameState)
 
     def getSuccessor(self, gameState, action):
@@ -53,16 +57,35 @@ class ApproximateQAgent(CaptureAgent):
           return successor
 
     def chooseAction(self, state):
+        # Append game state to observation history...
+        self.observationHistory.append(state)
         # Pick Action
         legalActions = state.getLegalActions(self.index)
         action = None
         if len(legalActions):
-            if util.flipCoin(self.epsilon):
+            if util.flipCoin(self.epsilon) and self.isTraining():
                 action = random.choice(legalActions)
             else:
                 action = self.computeActionFromQValues(state)
 
         self.lastAction = action
+        """ 
+        TODO
+        ReflexCaptureAgent has some code that returns to your side if there are less than 2 pellets
+        We added that here
+        """
+        foodLeft = len(self.getFood(state).asList())
+
+        if foodLeft <= 2:
+            bestDist = 9999
+            for a in legalActions:
+                successor = self.getSuccessor(state, a)
+                pos2 = successor.getAgentPosition(self.index)
+                dist = self.getMazeDistance(self.start,pos2)
+                if dist < bestDist:
+                    action = a
+                    bestDist = dist
+
         return action
 
     def getFeatures(self, gameState, action):
@@ -98,7 +121,7 @@ class ApproximateQAgent(CaptureAgent):
             elif value == bestValue:
                 bestActions.append(action)
         if bestActions == None:
-            return None # If no legal actions return None
+            return Directions.STOP # If no legal actions return None
         return random.choice(bestActions) # Else choose one of the best actions randomly
 
 
@@ -134,9 +157,13 @@ class ApproximateQAgent(CaptureAgent):
         total = 0
         weights = self.getWeights()
         features = self.getFeatures(state, action)
-        for featureValues in features:
+        #print "WEIGHTS"
+        #print weights
+        #print "FEATURES"
+        #print features
+        for feature in features:
             # Implements the Q calculation
-            total += features[featureValues] * weights[featureValues]
+            total += features[feature] * weights[feature]
         return total
 
     def getReward(self, gameState):
@@ -146,9 +173,12 @@ class ApproximateQAgent(CaptureAgent):
         return gameState.getScore() * redModifier
 
     def observationFunction(self, gameState):
-        if len(self.observationHistory) > 0:
-            self.update(self.observationHistory[-1], self.lastAction, gameState, self.getReward(gameState))
+        if len(self.observationHistory) > 0 and self.isTraining():
+            self.update(self.getCurrentObservation(), self.lastAction, gameState, self.getReward(gameState))
         return gameState.makeObservation(self.index)
+
+    def isTraining(self):
+        return self.episodesSoFar < self.numTraining
 
     def update(self, state, action, nextState, reward):
         """
@@ -157,26 +187,23 @@ class ApproximateQAgent(CaptureAgent):
         difference = (reward + self.discount * self.computeValueFromQValues(nextState))
         difference -= self.getQValue(state, action)
         # Only calculate the difference once, not in the loop.
+        newWeights = self.weights.copy()
         # Same with weights and features. 
-        weights = self.getWeights()
         features = self.getFeatures(state, action)
-        for featureValues in features:
+        for feature in features:
             # Implements the weight updating calculations
-            weights[featureValues] += self.alpha * difference * features[featureValues]
-
+            newWeights[feature] += self.alpha * difference * features[feature]
+        self.weights = newWeights.copy()
+        print "WEIGHTS AFTER UPDATE"
+        print self.weights
 
     def final(self, state):
         "Called at the end of each game."
         # call the super-class final method
         CaptureAgent.final(self, state)
-
-        try:
-            self.episodesSoFar += 1
-        except AttributeError:
-            self.episodesSoFar = 1
-
-        # did we finish training?
+        if self.isTraining():
+            print "END WEIGHTS"
+            print self.weights
+        self.episodesSoFar += 1
         if self.episodesSoFar == self.numTraining:
-            # you might want to print your weights here for debugging
-            "*** YOUR CODE HERE ***"
-            pass
+            print "FINISHED TRAINING"
