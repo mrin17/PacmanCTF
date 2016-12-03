@@ -161,9 +161,9 @@ class ApproximateQAgent(CaptureAgent):
         #print weights
         #print "FEATURES"
         #print features
-        for featureValues in features:
+        for feature in features:
             # Implements the Q calculation
-            total += features[featureValues] * weights[featureValues]
+            total += features[feature] * weights[feature]
         return total
 
     def getReward(self, gameState):
@@ -190,12 +190,12 @@ class ApproximateQAgent(CaptureAgent):
         newWeights = self.weights.copy()
         # Same with weights and features. 
         features = self.getFeatures(state, action)
-        for featureValues in features:
+        for feature in features:
             # Implements the weight updating calculations
-            newWeights[featureValues] += self.alpha * difference * features[featureValues]
+            newWeights[feature] += self.alpha * difference * features[feature]
         self.weights = newWeights.copy()
-        #print "WEIGHTS AFTER UPDATE"
-        #print self.weights
+        print "WEIGHTS AFTER UPDATE"
+        print self.weights
 
     def final(self, state):
         "Called at the end of each game."
