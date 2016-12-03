@@ -30,14 +30,18 @@ def createTeam(firstIndex, secondIndex, isRed,
 
 class ApproximateQAgent(CaptureAgent):
 
-    def registerInitialState(self, gameState):
-        self.start = gameState.getAgentPosition(self.index)
-        self.lastAction = None
+    def __init__( self, index ):
+        CaptureAgent.__init__(self, index)
         self.weights = util.Counter()
+        self.numTraining = 2
+        self.episodesSoFar = 0
         self.epsilon = 0.05
         self.discount = 0.8
         self.alpha = 0.2
-        self.numTraining = 0
+
+    def registerInitialState(self, gameState):
+        self.start = gameState.getAgentPosition(self.index)
+        self.lastAction = None
         CaptureAgent.registerInitialState(self, gameState)
 
     def getSuccessor(self, gameState, action):
@@ -53,11 +57,13 @@ class ApproximateQAgent(CaptureAgent):
           return successor
 
     def chooseAction(self, state):
+        # Append game state to observation history...
+        self.observationHistory.append(state)
         # Pick Action
         legalActions = state.getLegalActions(self.index)
         action = None
         if len(legalActions):
-            if util.flipCoin(self.epsilon):
+            if util.flipCoin(self.epsilon) and self.isTraining():
                 action = random.choice(legalActions)
             else:
                 action = self.computeActionFromQValues(state)
@@ -151,6 +157,10 @@ class ApproximateQAgent(CaptureAgent):
         total = 0
         weights = self.getWeights()
         features = self.getFeatures(state, action)
+        #print "WEIGHTS"
+        #print weights
+        #print "FEATURES"
+        #print features
         for featureValues in features:
             # Implements the Q calculation
             total += features[featureValues] * weights[featureValues]
@@ -163,9 +173,12 @@ class ApproximateQAgent(CaptureAgent):
         return gameState.getScore() * redModifier
 
     def observationFunction(self, gameState):
-        if len(self.observationHistory) > 0:
-            self.update(self.observationHistory[-1], self.lastAction, gameState, self.getReward(gameState))
+        if len(self.observationHistory) > 0 and self.isTraining():
+            self.update(self.getCurrentObservation(), self.lastAction, gameState, self.getReward(gameState))
         return gameState.makeObservation(self.index)
+
+    def isTraining(self):
+        return self.episodesSoFar < self.numTraining
 
     def update(self, state, action, nextState, reward):
         """
@@ -181,20 +194,16 @@ class ApproximateQAgent(CaptureAgent):
             # Implements the weight updating calculations
             newWeights[featureValues] += self.alpha * difference * features[featureValues]
         self.weights = newWeights.copy()
+        #print "WEIGHTS AFTER UPDATE"
+        #print self.weights
 
     def final(self, state):
         "Called at the end of each game."
         # call the super-class final method
         CaptureAgent.final(self, state)
-        print self.weights
-
-        try:
-            self.episodesSoFar += 1
-        except AttributeError:
-            self.episodesSoFar = 1
-
-        # did we finish training?
+        if self.isTraining():
+            print "END WEIGHTS"
+            print self.weights
+        self.episodesSoFar += 1
         if self.episodesSoFar == self.numTraining:
-            # you might want to print your weights here for debugging
-            "*** YOUR CODE HERE ***"
-            pass
+            print "FINISHED TRAINING"
