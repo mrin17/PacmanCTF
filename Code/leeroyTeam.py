@@ -37,6 +37,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   	self.weights['ghostDistance'] = 5
   	self.weights['stop'] = -1000
   	self.weights['legalActions'] = 100
+  	# DO NOT make this number higher than 2. Even 2 is really laggy...
+  	self.numLegalActionLoops = 1
   	print "INITIAL WEIGHTS"
   	print self.weights
   
@@ -81,12 +83,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
     
     # The total of the legalActions you can take from where you are AND
     # The legalActions you can take in all future states
-    legalActions = gameState.getLegalActions(self.index)
-    features['legalActions'] = len(legalActions)
-    for legalAction in legalActions:
-        newState = self.getSuccessor(gameState, legalAction).getAgentState(self.index)
-        possibleNewActions = Actions.getPossibleActions( newState.configuration, gameState.data.layout.walls )
-        features['legalActions'] += len(possibleNewActions)
+    features['legalActions'] = self.getLegalActionModifier(gameState, self.numLegalActionLoops)
     
     return features
 
@@ -95,6 +92,16 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 
   def getLeeroyDistance(self, myPos, food):
       return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
+
+  def getLegalActionModifier(self, gameState, numLoops):
+		legalActions = gameState.getLegalActions(self.index)
+		numActions = len(legalActions)
+		for legalAction in legalActions:
+			newState = self.getSuccessor(gameState, legalAction)
+			newAgentState = newState.getAgentState(self.index)
+			if numLoops > 0:
+				numActions += self.getLegalActionModifier(newState, numLoops - 1)
+		return numActions
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
