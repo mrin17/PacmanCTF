@@ -37,6 +37,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   	self.weights['ghostDistance'] = 5
   	self.weights['stop'] = -1000
   	self.weights['legalActions'] = 100
+  	self.weights['backToStartDistance'] = -1000
+  	self.threatenedDistance = 3
   	print "INITIAL WEIGHTS"
   	print self.weights
   
@@ -68,6 +70,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
         smallestDist = min(dists)
         # Only track it if the ghostDistance is smaller than X
         features['ghostDistance'] = smallestDist
+        features['backToStartDistance'] = self.getBackToStartDistance(myPos, smallestDist)
     
     # If we are on defense and we are not scared, negate this value
     # So that we move closer to pacmen we can see
@@ -95,6 +98,13 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 
   def getLeeroyDistance(self, myPos, food):
       return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
+
+  def getBackToStartDistance(self, myPos, smallestGhostDist):
+  	if smallestGhostDist > self.threatenedDistance:
+  		return 0
+  	else:
+  		return self.getMazeDistance(self.start,myPos)
+
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
