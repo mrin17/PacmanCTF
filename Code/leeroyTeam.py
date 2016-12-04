@@ -37,10 +37,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   	self.weights['ghostDistance'] = 5
   	self.weights['stop'] = -1000
   	self.weights['legalActions'] = 100
-  	self.weights['backToSafeZone'] = 100
-  	self.safeX = -1
-  	self.xDistanceToCashIn = 4
-  	self.minPelletsToCashIn = 6
+  	self.weights['backToSafeZone'] = -1
+  	self.minPelletsToCashIn = 8
   	print "INITIAL WEIGHTS"
   	print self.weights
   
@@ -102,19 +100,10 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   def getLeeroyDistance(self, myPos, food):
       return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
 
-  def getSafeX(self, gameState):
-  	if self.safeX == -1:
-  		self.safeX = gameState.data.layout.width / 2
-  		if self.red:
-  			self.safeX -= 1
-  		else:
-  			self.safeX += 1
-  	return self.safeX
-
   def getCashInValue(self, myPos, gameState, myState):
-  	# if we are close enough to our side, and we have enough pellets, attempt to cash in
-  	if self.getSafeX(gameState) - myPos[0] <= self.xDistanceToCashIn and myState.numCarrying >= self.minPelletsToCashIn:
-  		return max(self.xDistanceToCashIn + 2 - self.getMazeDistance(self.start, myPos), 0)
+  	# if we have enough pellets, attempt to cash in
+  	if myState.numCarrying >= self.minPelletsToCashIn:
+  		return self.getMazeDistance(self.start, myPos)
   	else:
 		return 0
 
