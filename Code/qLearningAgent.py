@@ -35,7 +35,7 @@ class ApproximateQAgent(CaptureAgent):
     def __init__( self, index ):
         CaptureAgent.__init__(self, index)
         self.weights = util.Counter()
-        self.numTraining = 2
+        self.numTraining = 0
         self.episodesSoFar = 0
         self.epsilon = 0.05
         self.discount = 0.8
