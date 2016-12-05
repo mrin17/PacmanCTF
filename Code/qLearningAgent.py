@@ -10,7 +10,7 @@ from game import Actions
 # Team creation #
 #################
 
-DEBUG = True
+DEBUG = False
 
 def createTeam(firstIndex, secondIndex, isRed,
                first = 'ApproximateQAgent', second = 'ApproximateQAgent', **args):
