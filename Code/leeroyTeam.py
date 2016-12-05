@@ -34,12 +34,12 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   	ApproximateQAgent.__init__(self, index)
   	self.weights['successorScore'] = 100
   	self.weights['leeroyDistanceToFood'] = -1
-  	self.weights['ghostDistance'] = 5
+  	self.weights['ghostDistance'] = 1
   	self.weights['stop'] = -1000
   	self.weights['legalActions'] = 100
   	self.weights['backToStartDistance'] = -1000
   	self.threatenedDistance = 3
-  	self.weights['powerPelletValue'] = 100
+  	self.weights['powerPelletValue'] = 10000
   	self.distanceToTrackPowerPelletValue = 3
   	self.weights['backToSafeZone'] = -1
   	self.minPelletsToCashIn = 8
