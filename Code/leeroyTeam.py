@@ -37,6 +37,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   	self.weights['ghostDistance'] = 5
   	self.weights['stop'] = -1000
   	self.weights['legalActions'] = 100
+  	self.weights['powerPelletValue'] = 100
+  	self.distanceToTrackPowerPelletValue = 3
   	self.weights['backToSafeZone'] = -1
   	self.minPelletsToCashIn = 8
   	print "INITIAL WEIGHTS"
@@ -53,7 +55,6 @@ class LeeroyCaptureAgent(ApproximateQAgent):
     # Compute distance to the nearest food
     # uses leeroy distance so its prioritizes either top or bottom food
     if len(foodList) > 0: # This should always be True,  but better safe than sorry
-        myPos = successor.getAgentState(self.index).getPosition()
         leeroyDistance = min([self.getLeeroyDistance(myPos, food) for food in foodList])
         features['leeroyDistanceToFood'] = leeroyDistance
       
@@ -62,13 +63,13 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 
     # Grab all non-scared enemy ghosts we can see
     enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
-    ghosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
-    if len(ghosts) > 0:
+    nonScaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
+    scaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and a.scaredTimer > 0]
+    if len(nonScaredGhosts) > 0:
         # Computes distance to enemy ghosts we can see
-        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in ghosts]
+        dists = [self.getMazeDistance(myPos, a.getPosition()) for a in nonScaredGhosts]
         # Use the smallest distance
         smallestDist = min(dists)
-        # Only track it if the ghostDistance is smaller than X
         features['ghostDistance'] = smallestDist
     
     # If we are on defense and we are not scared, negate this value
@@ -76,6 +77,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
     # Doesn't work because ghosts are not pacmen
     #if onDefense and not myState.scaredTimer > 0:
         #features['ghostDistance'] = -features['ghostDistance']
+
+    features['powerPelletValue'] = self.getPowerPelletValue(myPos, successor, scaredGhosts)
     
     # Heavily prioritize not stopping
     if action == Directions.STOP: 
@@ -100,13 +103,20 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   def getLeeroyDistance(self, myPos, food):
       return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
 
+  def getPowerPelletValue(self, myPos, successor, scaredGhosts):
+  	powerPellets = self.getCapsules(successor)
+  	minDistance = 0
+  	if len(powerPellets) > 0 and len(scaredGhosts) == 0:
+		distances = [self.getMazeDistance(myPos, pellet) for pellet in powerPellets]
+		minDistance = min(distances)
+	return max(self.distanceToTrackPowerPelletValue - minDistance, 0)
+
   def getCashInValue(self, myPos, gameState, myState):
   	# if we have enough pellets, attempt to cash in
   	if myState.numCarrying >= self.minPelletsToCashIn:
   		return self.getMazeDistance(self.start, myPos)
   	else:
 		return 0
-
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
