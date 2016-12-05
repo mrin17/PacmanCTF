@@ -41,6 +41,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   	self.distanceToTrackPowerPelletValue = 3
   	self.weights['backToSafeZone'] = -1
   	self.minPelletsToCashIn = 8
+  	self.weights['chaseEnemyValue'] = 100
+  	self.chaseEnemyDistance = 3
   	print "INITIAL WEIGHTS"
   	print self.weights
   
@@ -63,6 +65,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 
     # Grab all non-scared enemy ghosts we can see
     enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+    enemyPacmen = [a for a in enemies if a.isPacman and a.getPosition() != None]
     nonScaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
     scaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and a.scaredTimer > 0]
     if len(nonScaredGhosts) > 0:
@@ -79,7 +82,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
         #features['ghostDistance'] = -features['ghostDistance']
 
     features['powerPelletValue'] = self.getPowerPelletValue(myPos, successor, scaredGhosts)
-    
+    features['chaseEnemyValue'] = self.getChaseEnemyWeight(myPos, enemyPacmen)
+
     # Heavily prioritize not stopping
     if action == Directions.STOP: 
         features['stop'] = 1
@@ -117,6 +121,17 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   		return self.getMazeDistance(self.start, myPos)
   	else:
 		return 0
+
+  def getChaseEnemyWeight(self, myPos, enemyPacmen):
+  	if len(enemyPacmen) > 0:
+        # Computes distance to enemy pacmen we can see
+		dists = [self.getMazeDistance(myPos, enemy.getPosition()) for enemy in enemyPacmen]
+        # Use the smallest distance
+		if len(dists) > 0:
+			smallestDist = min(dists)
+			if smallestDist <= self.chaseEnemyDistance:
+				return self.chaseEnemyDistance - smallestDist + 1
+	return 0
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
