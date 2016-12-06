@@ -6,6 +6,33 @@ import game
 from util import nearestPoint
 from game import Actions
 
+SONAR_NOISE_RANGE = 13 # Must be odd
+SONAR_NOISE_VALUES = [i - (SONAR_NOISE_RANGE - 1)/2 for i in range(SONAR_NOISE_RANGE)]
+
+# Shamelessly copied from capture.py to avoid messy imports
+def getDistanceProb(trueDistance, noisyDistance):
+    "Returns the probability of a noisy distance given the true distance"
+    if noisyDistance - trueDistance in SONAR_NOISE_VALUES:
+      return 1.0/SONAR_NOISE_RANGE
+    else:
+      return 0
+
+def getObservationDistribution(noisyDistance):
+    """
+    Returns the factor P( noisyDistance | TrueDistances ), the likelihood of the provided noisyDistance
+    conditioned upon all the possible true distances that could have generated it.
+    """
+    global observationDistributions
+    if noisyDistance == None:
+        return util.Counter()
+    if noisyDistance not in observationDistributions:
+        distribution = util.Counter()
+        for error in SONAR_NOISE_VALUES:
+            prob = getDistanceProb()
+            distribution[max(1, noisyDistance - error)] += getDistanceProb(max(1, noisyDistance - error), noisyDistance)
+        observationDistributions[noisyDistance] = distribution
+    return observationDistributions[noisyDistance]
+
 #################
 # Team creation #
 #################
@@ -40,10 +67,20 @@ class ApproximateQAgent(CaptureAgent):
         self.epsilon = 0.05
         self.discount = 0.8
         self.alpha = 0.2
+        self.beliefsInitialized = False
+        self.opponentMaybeDefinitePosition = {}
 
     def registerInitialState(self, gameState):
         self.start = gameState.getAgentPosition(self.index)
         self.lastAction = None
+        "Beliefs on opposing ghost positions."
+        self.legalPositions = []
+        walls = gameState.getWalls()
+        for x in range(walls.width):
+            for y in range(walls.height):
+                if not walls[x][y]:
+                    self.legalPositions.append((x, y))
+
         CaptureAgent.registerInitialState(self, gameState)
 
     def getSuccessor(self, gameState, action):
@@ -182,6 +219,8 @@ class ApproximateQAgent(CaptureAgent):
     def observationFunction(self, gameState):
         if len(self.observationHistory) > 0 and self.isTraining():
             self.update(self.getCurrentObservation(), self.lastAction, gameState, self.getReward(gameState))
+        if len(self.observationHistory) > 0:
+            self.observeAllOpponents(gameState)
         return gameState.makeObservation(self.index)
 
     def isTraining(self):
@@ -214,6 +253,54 @@ class ApproximateQAgent(CaptureAgent):
 
     def newline(self):
         return "-------------------------------------------------------------------------"
+
+    def initializeBeliefs(self, gameState):
+        self.beliefs = [None for x in range(len(self.getOpponents(gameState)) + len(self.getTeam(gameState)))]
+        for opponent in self.getOpponents(gameState):
+            self.initializeBelief(opponent)
+        self.beliefsInitialized = True
+
+    def initializeBelief(self, opponentIndex):
+        belief = util.Counter()
+        for p in self.legalPositions:
+            belief[p] = 1.0
+        belief.normalize()
+        self.beliefs[opponentIndex] = belief
+
+    def observeAllOpponents(self, gameState):
+        if self.beliefsInitialized:
+            for opponent in self.getOpponents(gameState):
+                #print(gameState.getAgentPosition(opponent))
+                self.observeOneOpponent(gameState.getAgentPosition(opponent), gameState, opponent)
+        else: # Opponent indices are different in initialize() than anywhere else for some reason
+            self.initializeBeliefs(gameState)
+
+    def getPositionDistribution(self, gameState, oldPos):
+        pass
+
+    def observeOneOpponent(self, observation, gameState, opponentIndex):
+        allPossible = util.Counter()
+        allPossible[gameState.getAgentPosition(opponentIndex)] = 1
+        self.beliefs[opponentIndex] = allPossible
+        #self.displayDistributionsOverPositions(self.beliefs)
+        self.opponentMaybeDefinitePosition[opponentIndex] = gameState.getAgentPosition(opponentIndex)
+        '''
+        allPossible = util.Counter()
+        for oldPos in self.legalPositions:
+            # Probability a ghost is in a given position at time T = p(t)
+            # Probability a ghost is in a given position at time T + 1 = p(t+1)
+            # We want p(t+1), which is the sum of p(t+1 | t)*p(t) over p(T)
+            oldProb = self.beliefs[opponentIndex][oldPos]
+            newPosDist = self.getPositionDistribution(gameState, oldPos)
+            for newPos, prob in newPosDist.items():
+                # prob is p(t+1 | t)
+                # oldProb is p(t)
+                # So multiply them to get p(t+1 | t) * p(t)
+                change = prob * oldProb
+                allPossible[newPos] += change
+        allPossible.normalize()
+        self.beliefs[opponentIndex] = allPossible
+        '''
 
     def final(self, state):
         "Called at the end of each game."
