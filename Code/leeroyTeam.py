@@ -301,24 +301,13 @@ class LeeroyCaptureAgent(ApproximateQAgent):
     enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
     nonScaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
     scaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and a.scaredTimer > 0]
-    c = []
-    for a in enemies:
-        allPossible = util.Counter()
-        allPossible[a.getPosition()] = 1
-        c.append(allPossible)
-    #self.displayDistributionsOverPositions(c)
-    d = []
-    for opp in self.opponentMaybeDefinitePosition:
-        #print posn
-        allPossible = util.Counter()
-        allPossible[self.opponentMaybeDefinitePosition[opp]] = 1
-        d.append(allPossible)
-    self.displayDistributionsOverPositions(d)
     if len(nonScaredGhosts) > 0:
         # Computes distance to enemy ghosts we can see
         dists = [self.getMazeDistance(myPos, a.getPosition()) for a in nonScaredGhosts]
         # Use the smallest distance
         smallestDist = min(dists)
+        if smallestDist > 7:
+            smallestDist = 0
         features['ghostDistance'] = smallestDist
     
     # If we are on defense and we are not scared, negate this value
