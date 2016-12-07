@@ -21,7 +21,7 @@ TODOs that will fix this code, currently it loses every time to the baselineTeam
 - account for that noisyDistance thing in our ghost distance formula
 '''
 
-DEBUG = True
+DEBUG = False
 DEFENSE_TIMER_MAX = 100.0
 
 beliefs = []
