@@ -20,6 +20,10 @@ TODOs that will fix this code, currently it loses every time to the baselineTeam
 - make it go back to its own side every once in a while to 'cash in' the pellets it has
 - account for that noisyDistance thing in our ghost distance formula
 '''
+
+DEBUG = False
+DEFENSE_TIMER_MAX = 100.0
+
 def createTeam(firstIndex, secondIndex, isRed,
 							 first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent', **args):
 	return [eval(first)(firstIndex), eval(second)(secondIndex)]
@@ -29,6 +33,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 	def registerInitialState(self, gameState):
 		ApproximateQAgent.registerInitialState(self, gameState)
 		self.favoredY = 0.0
+		self.defenseTimer = 0.0
+		self.lastNumReturnedPellets = 0.0
 
 	def __init__( self, index ):
 		ApproximateQAgent.__init__(self, index)
@@ -41,11 +47,14 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		self.distanceToTrackPowerPelletValue = 3
 		self.weights['backToSafeZone'] = -1
 		self.minPelletsToCashIn = 8
+		self.weights['chaseEnemyValue'] = -100
+		self.chaseEnemyDistance = 5
 		# dictionary of (position) -> [action, ...]
 		# populated as we go along; to use this, call self.getLegalActions(gameState)
 		self.legalActionMap = {}
-		print "INITIAL WEIGHTS"
-		print self.weights
+		if DEBUG:
+			print "INITIAL WEIGHTS"
+			print self.weights
 
 	def getLegalActions(self, gameState):
 		"""
@@ -76,6 +85,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 
 		# Grab all non-scared enemy ghosts we can see
 		enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
+		enemyPacmen = [a for a in enemies if a.isPacman and a.getPosition() != None]
 		nonScaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
 		scaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and a.scaredTimer > 0]
 		if len(nonScaredGhosts) > 0:
@@ -84,15 +94,19 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				# Use the smallest distance
 				smallestDist = min(dists)
 				features['ghostDistance'] = smallestDist
-		
-		# If we are on defense and we are not scared, negate this value
-		# So that we move closer to pacmen we can see
-		# Doesn't work because ghosts are not pacmen
-		#if onDefense and not myState.scaredTimer > 0:
-				#features['ghostDistance'] = -features['ghostDistance']
 
 		features['powerPelletValue'] = self.getPowerPelletValue(myPos, successor, scaredGhosts)
+		features['chaseEnemyValue'] = self.getChaseEnemyWeight(myPos, enemyPacmen)
 		
+		# If we returned any pellets, we shift over to defense mode for a time
+		if myState.numReturned != self.lastNumReturnedPellets:
+			self.defenseTimer = DEFENSE_TIMER_MAX
+			self.lastNumReturnedPellets = myState.numReturned
+		# If on defense, heavily value chasing after enemies
+		if self.defenseTimer > 0:
+			self.defenseTimer -= 1
+			features['chaseEnemyValue'] *= 100
+
 		# Heavily prioritize not stopping
 		if action == Directions.STOP: 
 				features['stop'] = 1
@@ -130,6 +144,16 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 			return self.getMazeDistance(self.start, myPos)
 		else:
 			return 0
+
+  def getChaseEnemyWeight(self, myPos, enemyPacmen):
+  	if len(enemyPacmen) > 0:
+        # Computes distance to enemy pacmen we can see
+		dists = [self.getMazeDistance(myPos, enemy.getPosition()) for enemy in enemyPacmen]
+        # Use the smallest distance
+		if len(dists) > 0:
+			smallestDist = min(dists)
+			return smallestDist
+	return 0
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
