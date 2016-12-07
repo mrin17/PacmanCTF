@@ -29,6 +29,7 @@ arguments = {}
 
 MINIMUM_PROBABILITY = .0001
 PANIC_TIME = 80
+CHEAT = False
 beliefs = []
 beliefsInitialized = []
 FORWARD_LOOKING_LOOPS = 1
@@ -467,7 +468,6 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 			self.initializeBeliefs(gameState)
 
 	def observeOneOpponent(self, gameState, opponentIndex):
-		noisyDistance = gameState.getAgentDistances()[opponentIndex]
 		pacmanPosition = gameState.getAgentPosition(self.index)
 		allPossible = util.Counter()
 		# We might have a definite position for the agent - if so, no need to do calcs
@@ -476,6 +476,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 			allPossible[maybeDefinitePosition] = 1
 			beliefs[opponentIndex] = allPossible
 			return
+		noisyDistance = gameState.getAgentDistances()[opponentIndex]
 		for p in self.getLegalPositions(gameState):
 			# For each legal ghost position, calculate distance to that ghost
 			trueDistance = util.manhattanDistance(p, pacmanPosition)
@@ -494,6 +495,13 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				allPossible[p] = 0
 		allPossible.normalize()
 		beliefs[opponentIndex] = allPossible
+
+	def observationFunction(self, gameState):
+		# Cheats. Sneakily hidden at the bottom of the agent definition ;)
+		if CHEAT:
+			return gameState
+		else:
+			return ApproximateQAgent.observationFunction(self, gameState)
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
