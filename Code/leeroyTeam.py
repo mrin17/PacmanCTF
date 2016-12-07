@@ -28,16 +28,16 @@ def createTeam(firstIndex, secondIndex, isRed,
 							 first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent', **args):
 	return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
-class LeeroyCaptureAgent(ReflexCaptureAgent):
+class LeeroyCaptureAgent(ApproximateQAgent):
 	
 	def registerInitialState(self, gameState):
-		ReflexCaptureAgent.registerInitialState(self, gameState)
+		ApproximateQAgent.registerInitialState(self, gameState)
 		self.favoredY = 0.0
 		self.defenseTimer = 0.0
 		self.lastNumReturnedPellets = 0.0
 
 	def __init__( self, index ):
-		ReflexCaptureAgent.__init__(self, index)
+		ApproximateQAgent.__init__(self, index)
 		self.weights = util.Counter()
 		self.weights['successorScore'] = 100
 		self.weights['leeroyDistanceToFood'] = -1
@@ -129,7 +129,7 @@ class LeeroyCaptureAgent(ReflexCaptureAgent):
 		
 		return features
 
-	def getWeights(self, gameState, action):
+	def getWeights(self):
 		return self.weights
 
 	def getLeeroyDistance(self, myPos, food):
