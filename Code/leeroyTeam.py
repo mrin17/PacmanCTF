@@ -160,8 +160,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		legalActions = self.getLegalActions(gameState)
 		numActions = len(legalActions)
 		for legalAction in legalActions:
-			newState = self.getSuccessor(gameState, legalAction)
 			if numLoops > 0:
+				newState = self.getSuccessor(gameState, legalAction)
 				numActions += self.getLegalActionModifier(newState, numLoops - 1)
 		return numActions
 
