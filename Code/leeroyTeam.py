@@ -225,7 +225,6 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				allPossible[p] = (oldProb + MINIMUM_PROBABILITY) * modelProb
 			else:
 				allPossible[p] = 0
-
 		allPossible.normalize()
 		beliefs[opponentIndex] = allPossible
 
