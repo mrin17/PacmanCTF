@@ -21,9 +21,10 @@ TODOs that will fix this code, currently it loses every time to the baselineTeam
 - account for that noisyDistance thing in our ghost distance formula
 '''
 
-DEBUG = True
+DEBUG = False
 DEFENSE_TIMER_MAX = 100.0
 
+MINIMUM_PROBABILITY = .0001
 beliefs = []
 beliefsInitialized = []
 
@@ -221,7 +222,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				oldProb = beliefs[opponentIndex][p]
 				# Add a small constant to oldProb because a ghost may travel more than
 				# 13 spaces - if that happens then we don't want to think it's prob is 0
-				allPossible[p] = (oldProb + .0001) * modelProb
+				allPossible[p] = (oldProb + MINIMUM_PROBABILITY) * modelProb
 			else:
 				allPossible[p] = 0
 
