@@ -416,8 +416,6 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				self.observeOneOpponent(gameState, opponent)
 		else: # Opponent indices are different in initialize() than anywhere else for some reason
 			self.initializeBeliefs(gameState)
-		if DEBUG:
-			self.displayDistributionsOverPositions(beliefs)
 
 	def observeOneOpponent(self, gameState, opponentIndex):
 		noisyDistance = gameState.getAgentDistances()[opponentIndex]
