@@ -102,7 +102,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		legalActions = self.getLegalActions(gameState)
 		features['legalActions'] = len(legalActions)
 		for legalAction in legalActions:
-			newState = self.getSuccessor(gameState, legalAction).getAgentState(self.index)
+			newState = self.getSuccessor(gameState, legalAction)
 			possibleNewActions = self.getLegalActions(newState)
 			features['legalActions'] += len(possibleNewActions)
 
