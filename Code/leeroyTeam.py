@@ -21,8 +21,11 @@ TODOs that will fix this code, currently it loses every time to the baselineTeam
 - account for that noisyDistance thing in our ghost distance formula
 '''
 
-DEBUG = False
+DEBUG = True
 DEFENSE_TIMER_MAX = 100.0
+
+beliefs = []
+beliefsInitialized = []
 
 def createTeam(firstIndex, secondIndex, isRed,
 							 first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent', **args):
@@ -35,6 +38,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		self.favoredY = 0.0
 		self.defenseTimer = 0.0
 		self.lastNumReturnedPellets = 0.0
+		self.getLegalPositions(gameState)
 
 	def __init__( self, index ):
 		ApproximateQAgent.__init__(self, index)
@@ -53,9 +57,21 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		# dictionary of (position) -> [action, ...]
 		# populated as we go along; to use this, call self.getLegalActions(gameState)
 		self.legalActionMap = {}
+		self.legalPositionsInitialized = False
 		if DEBUG:
 			print "INITIAL WEIGHTS"
 			print self.weights
+
+	def getLegalPositions(self, gameState):
+		if not self.legalPositionsInitialized:
+			self.legalPositions = []
+			walls = gameState.getWalls()
+			for x in range(walls.width):
+				for y in range(walls.height):
+					if not walls[x][y]:
+						self.legalPositions.append((x, y))
+			self.legalPositionsInitialized = True
+		return self.legalPositions
 
 	def getLegalActions(self, gameState):
 		"""
@@ -68,6 +84,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		return self.legalActionMap[currentPos]
 
 	def getFeatures(self, gameState, action):
+		self.observeAllOpponents(gameState)
 		features = util.Counter()
 		successor = self.getSuccessor(gameState, action)
 		myState = successor.getAgentState(self.index)
@@ -159,6 +176,67 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				smallestDist = min(dists)
 				return smallestDist
 		return 0
+
+	def initializeBeliefs(self, gameState):
+		beliefs.extend([None for x in range(len(self.getOpponents(gameState)) + len(self.getTeam(gameState)))])
+		for opponent in self.getOpponents(gameState):
+			self.initializeBelief(opponent, gameState)
+		beliefsInitialized.append('done')
+
+	def initializeBelief(self, opponentIndex, gameState):
+		belief = util.Counter()
+		for p in self.getLegalPositions(gameState):
+			belief[p] = 1.0
+		belief.normalize()
+		beliefs[opponentIndex] = belief
+
+	def observeAllOpponents(self, gameState):
+		if len(beliefsInitialized):
+			for opponent in self.getOpponents(gameState):
+				self.observeOneOpponent(gameState, opponent)
+		else: # Opponent indices are different in initialize() than anywhere else for some reason
+			self.initializeBeliefs(gameState)
+		self.displayDistributionsOverPositions(beliefs)
+
+	def observeOneOpponent(self, gameState, opponentIndex):
+		noisyDistance = gameState.getAgentDistances()[opponentIndex]
+		pacmanPosition = gameState.getAgentPosition(self.index)
+
+		"*** YOUR CODE HERE ***"
+		allPossible = util.Counter()
+		maybeDefinitePosition = gameState.getAgentPosition(opponentIndex)
+		if maybeDefinitePosition != None:
+			allPossible[maybeDefinitePosition] = 1
+			beliefs[opponentIndex] = allPossible
+			return
+		ghostIsEaten = False # We don't care if ghost is eaten (noisyDistance == None) # Check if we just ate the ghost
+		for p in self.getLegalPositions(gameState):
+			# For each legal ghost position
+			if ghostIsEaten: # If the ghost was eaten set its probability to 0
+				allPossible[p] = 0
+				continue
+			# Otherwise calculate distance to that ghost
+			trueDistance = util.manhattanDistance(p, pacmanPosition)
+			modelProb = gameState.getDistanceProb(trueDistance, noisyDistance) # Find the probability of getting this noisyDistance if the ghost is at this position
+			if modelProb > 0:
+				# We'd like to find the probability of the ghost being at this distance
+				# given that we got this noisy distance
+				# p(noisy | true) = p(true | noisy) * p(true) / p(noisy)
+				# p(noisy) is 1 - we know that for certain.
+				# So return p(true | noisy) * p(true)
+				oldProb = beliefs[opponentIndex][p]
+				allPossible[p] = (oldProb + .0001) * modelProb
+			else:
+				allPossible[p] = 0
+				
+		if ghostIsEaten:
+			# If the ghost was eaten it's definitely in jail
+			allPossible[self.getJailPosition()] = 1
+
+		"*** END YOUR CODE HERE ***"
+
+		allPossible.normalize()
+		beliefs[opponentIndex] = allPossible
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
