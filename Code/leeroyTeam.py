@@ -107,6 +107,10 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 			self.defenseTimer -= 1
 			features['chaseEnemyValue'] *= 100
 
+		# If our opponents ate all our food (except for 2), we rush them
+		if len(self.getFoodYouAreDefending(successor).asList()) <= 2:
+			features['chaseEnemyValue'] *= 100
+
 		# Heavily prioritize not stopping
 		if action == Directions.STOP: 
 				features['stop'] = 1
