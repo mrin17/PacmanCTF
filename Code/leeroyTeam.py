@@ -8,7 +8,7 @@ from util import nearestPoint
 from game import Actions
 
 DEBUG = False
-CHEAT = False
+CHEAT = True
 
 class ApproximateQAgent(CaptureAgent):
 
@@ -271,6 +271,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
             self.observeOneOpponent(gameState, opponent)
     else: # Opponent indices are different in initialize() than anywhere else for some reason
         self.initializeBeliefs(gameState)
+    self.displayDistributionsOverPositions(self.beliefs)
 
   def observeOneOpponent(self, gameState, opponentIndex):
     allPossible = util.Counter()
