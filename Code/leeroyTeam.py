@@ -303,10 +303,15 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		enemyPacmen = [a for a in enemies if a.isPacman and a.getPosition() != None]
 		nonScaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
 		scaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and a.scaredTimer > 0]
-		if len(nonScaredGhosts) > 0:
-			# Computes distance to enemy ghosts we can see
-			dists = [self.getMazeDistance(myPos, a.getPosition()) for a in nonScaredGhosts]
-			# Use the smallest distance
+
+		# Computes distance to enemy non scared ghosts we can see
+		dists = []
+		for index in self.getOpponents(successor):
+			enemy = successor.getAgentState(index)
+			if enemy in nonScaredGhosts:
+				dists.append(self.getMazeDistance(myPos, self.getMostLikelyGhostPosition(index)))
+		# Use the smallest distance
+		if len(dists) > 0:
 			smallestDist = min(dists)
 			features['ghostDistance'] = smallestDist
 
@@ -373,6 +378,9 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				smallestDist = min(dists)
 				return smallestDist
 		return 0
+
+	def getMostLikelyGhostPosition(self, ghostAgentIndex):
+		return max(beliefs[ghostAgentIndex])
 
 	def initializeBeliefs(self, gameState):
 		beliefs.extend([None for x in range(len(self.getOpponents(gameState)) + len(self.getTeam(gameState)))])
