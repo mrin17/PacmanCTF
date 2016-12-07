@@ -8,18 +8,24 @@ from util import nearestPoint
 from game import Actions
 
 '''
+Michael Rinaldi, Phaelyn Kotuby, Calvin Pomerantz
+
 Leeroy Agents
 Time's up, let's do this
-Agents that are meant to take the most efficient route possible
+
+Agents that were originally meant to take the most efficient route possible
 One agent that values pellets with a higher y coordinate more
 One agent that values pellets with a lower y coordinate more
 Eventually they will converge in the middle
+
+We ended up using many tactics that involve calculating enemy ghost positions,
+for both offense and defense
 '''
 
 DEBUG = False
 DEFENSE_TIMER_MAX = 100.0
 USE_BELIEF_DISTANCE = True
-interestingValues = {}
+arguments = {}
 
 MINIMUM_PROBABILITY = .0001
 PANIC_TIME = 80
@@ -31,17 +37,20 @@ FORWARD_LOOKING_LOOPS = 1
 def createTeam(firstIndex, secondIndex, isRed,
 							 first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent', **args):
 	if 'numTraining' in args:
-		interestingValues['numTraining'] = args['numTraining']
+		arguments['numTraining'] = args['numTraining']
 	return [eval(first)(firstIndex), eval(second)(secondIndex)]
 
+
+# LeeroyAgent inherits from ApproximateQAgent
+# Our agent does worse with training, because we did not focus on training
 class ApproximateQAgent(CaptureAgent):
 
 	def __init__( self, index ):
 		CaptureAgent.__init__(self, index)
 		self.weights = util.Counter()
 		self.numTraining = 0
-		if 'numTraining' in interestingValues:
-			self.numTraining = interestingValues['numTraining']
+		#if 'numTraining' in arguments:
+		#	self.numTraining = arguments['numTraining']
 		self.episodesSoFar = 0
 		self.epsilon = 0.05
 		self.discount = 0.8
@@ -84,13 +93,9 @@ class ApproximateQAgent(CaptureAgent):
 					print "ACTION CHOSE FROM Q VALUES: " + action
 
 		self.lastAction = action
-		""" 
-		TODO
-		ReflexCaptureAgent has some code that returns to your side if there are less than 2 pellets
-		We added that here
-		"""
-		foodLeft = len(self.getFood(state).asList())
 
+		foodLeft = len(self.getFood(state).asList())
+		# Prioritize going back to start if we have <= 2 pellets left
 		if foodLeft <= 2:
 			bestDist = 9999
 			for a in legalActions:
@@ -232,6 +237,20 @@ class ApproximateQAgent(CaptureAgent):
 		if self.episodesSoFar == self.numTraining:
 			print "FINISHED TRAINING"
 
+'''
+The REAL LeeroyCaptureAgent
+Has many weights
+'successorScore' - we highly value eating our pellets
+'leeroyDistanceToFood' - we slightly value moving closer to a certain pellet
+		Remember, we use y-based calculations for leeroyDistance.
+'ghostDistance' - We value moving away from enemy non-scared ghosts
+'stop' - we highly penalize stopping
+'legalActions' - we highly value moving to spaces that have more possible actions
+'powerPelletValue' - we highly value eating a power pellet
+'backToSafeZone' - sometimes, we highly value moving back to your side of the field
+		For instance, when cashing in pellets, or when being chased by a ghost
+'chaseEnemyValue' - if we are close enough to an enemy Pacman, we highly value chasing it
+'''
 class LeeroyCaptureAgent(ApproximateQAgent):
 	
 	def registerInitialState(self, gameState):
@@ -291,6 +310,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 			self.legalActionMap[currentPos] = gameState.getLegalActions(self.index)
 		return self.legalActionMap[currentPos]
 
+	# If we are near the end of the game, we determine if we should just cash in pellets
 	def shouldRunHome(self, gameState):
 		winningBy = self.getWinningBy(gameState)
 		numCarrying = gameState.getAgentState(self.index).numCarrying
@@ -306,18 +326,15 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		myState = successor.getAgentState(self.index)
 		myPos = myState.getPosition()
 		foodList = self.getFood(successor).asList()    
-		features['successorScore'] = -len(foodList)#self.getScore(successor)
+		features['successorScore'] = -len(foodList)
 
 		# Compute distance to the nearest food
 		# uses leeroy distance so its prioritizes either top or bottom food
 		if len(foodList) > 0: # This should always be True,  but better safe than sorry
 			leeroyDistance = min([self.getLeeroyDistance(myPos, food) for food in foodList])
 			features['leeroyDistanceToFood'] = leeroyDistance
-			
-		# If we are on our side
-		onDefense = not myState.isPacman
 
-		# Grab all non-scared enemy ghosts we can see
+		# Grab all enemies
 		enemies = [successor.getAgentState(i) for i in self.getOpponents(successor)]
 		enemyPacmen = [a for a in enemies if a.isPacman and a.getPosition() != None]
 		nonScaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
@@ -340,7 +357,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		features['powerPelletValue'] = self.getPowerPelletValue(myPos, successor, scaredGhosts)
 		features['chaseEnemyValue'] = self.getChaseEnemyWeight(myPos, enemyPacmen)
 		
-		# If we returned any pellets, we shift over to defense mode for a time
+		# If we cashed in any pellets, we shift over to defense mode for a time
 		if myState.numReturned != self.lastNumReturnedPellets:
 			self.defenseTimer = DEFENSE_TIMER_MAX
 			self.lastNumReturnedPellets = myState.numReturned
@@ -362,6 +379,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		# It depends on how many loops we do
 		features['legalActions'] = self.getLegalActionModifier(gameState, FORWARD_LOOKING_LOOPS)
 
+		# Adding value for cashing in pellets
 		features['backToSafeZone'] = self.getCashInValue(myPos, gameState, myState)
 		
 		# Adding value for going back home
@@ -375,9 +393,11 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 	def getWeights(self):
 		return self.weights
 
+	# Adds (maze distance) to (the difference in y between the food and our favored y)
 	def getLeeroyDistance(self, myPos, food):
 		return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
 
+	# If there are not any scared ghosts, then we value eating pellets
 	def getPowerPelletValue(self, myPos, successor, scaredGhosts):
 		powerPellets = self.getCapsules(successor)
 		minDistance = 0
@@ -393,6 +413,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		else:
 			return 0
 
+	# If threatened, go back to start
 	def getBackToStartDistance(self, myPos, smallestGhostPosition):
 		if smallestGhostPosition > self.threatenedDistance or smallestGhostPosition == 0:
 			return 0
@@ -409,9 +430,23 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				return smallestDist
 		return 0
 
+	# Uses our beliefs based on the noisyDistance, and we just use the highest belief
 	def getMostLikelyGhostPosition(self, ghostAgentIndex):
 		return max(beliefs[ghostAgentIndex])
 
+	# We loop over each possible legal action and tally up the possible actions from there
+	def getLegalActionModifier(self, gameState, numLoops):
+		legalActions = self.getLegalActions(gameState)
+		numActions = len(legalActions)
+		for legalAction in legalActions:
+			if numLoops > 0:
+				newState = self.getSuccessor(gameState, legalAction)
+				numActions += self.getLegalActionModifier(newState, numLoops - 1)
+		return numActions
+
+	'''
+	Beliefs section-----------------------
+	'''
 	def initializeBeliefs(self, gameState):
 		beliefs.extend([None for x in range(len(self.getOpponents(gameState)) + len(self.getTeam(gameState)))])
 		for opponent in self.getOpponents(gameState):
@@ -461,22 +496,12 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		allPossible.normalize()
 		beliefs[opponentIndex] = allPossible
 
-	def getLegalActionModifier(self, gameState, numLoops):
-		legalActions = self.getLegalActions(gameState)
-		numActions = len(legalActions)
-		for legalAction in legalActions:
-			if numLoops > 0:
-				newState = self.getSuccessor(gameState, legalAction)
-				numActions += self.getLegalActionModifier(newState, numLoops - 1)
-		return numActions
-
 	def observationFunction(self, gameState):
 		# Cheats. Sneakily hidden at the bottom of the agent definition ;)
 		if CHEAT:
 			return gameState
 		else:
 			return ApproximateQAgent.observationFunction(self, gameState)
-
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
