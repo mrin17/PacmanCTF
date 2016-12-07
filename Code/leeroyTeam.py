@@ -290,9 +290,11 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 
 	def shouldRunHome(self, gameState):
 		winningBy = self.getWinningBy(gameState)
-		if gameState.data.timeleft < PANIC_TIME and winningBy <= 0:
-			return gameState.getAgentState(self.index).numCarrying >= abs(winningBy)
-		else: return False
+		numCarrying = gameState.getAgentState(self.index).numCarrying
+		return (gameState.data.timeleft < PANIC_TIME 
+			and winningBy <= 0 
+			and numCarrying > 0 
+			and numCarrying >= abs(winningBy))
 
 	def getFeatures(self, gameState, action):
 		self.observeAllOpponents(gameState)
