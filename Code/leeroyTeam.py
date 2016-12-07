@@ -21,8 +21,10 @@ DEFENSE_TIMER_MAX = 100.0
 interestingValues = {}
 
 MINIMUM_PROBABILITY = .0001
+PANIC_TIME = 80
 beliefs = []
 beliefsInitialized = []
+FORWARD_LOOKING_LOOPS = 1
 
 def createTeam(firstIndex, secondIndex, isRed,
 							 first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent', **args):
@@ -259,6 +261,12 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 			print "INITIAL WEIGHTS"
 			print self.weights
 
+	def getWinningBy(self, gameState):
+		if self.red:
+			return gameState.getScore()
+		else:
+			return -1 * gameState.getScore()
+
 	def getLegalPositions(self, gameState):
 		if not self.legalPositionsInitialized:
 			self.legalPositions = []
@@ -279,6 +287,14 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		if currentPos not in self.legalActionMap:
 			self.legalActionMap[currentPos] = gameState.getLegalActions(self.index)
 		return self.legalActionMap[currentPos]
+
+	def shouldRunHome(self, gameState):
+		winningBy = self.getWinningBy(gameState)
+		numCarrying = gameState.getAgentState(self.index).numCarrying
+		return (gameState.data.timeleft < PANIC_TIME 
+			and winningBy <= 0 
+			and numCarrying > 0 
+			and numCarrying >= abs(winningBy))
 
 	def getFeatures(self, gameState, action):
 		self.observeAllOpponents(gameState)
@@ -337,15 +353,14 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		
 		# The total of the legalActions you can take from where you are AND
 		# The legalActions you can take in all future states
-		legalActions = self.getLegalActions(gameState)
-		features['legalActions'] = len(legalActions)
-		for legalAction in legalActions:
-			newState = self.getSuccessor(gameState, legalAction)
-			possibleNewActions = self.getLegalActions(newState)
-			features['legalActions'] += len(possibleNewActions)
+		# It depends on how many loops we do
+		features['legalActions'] = self.getLegalActionModifier(gameState, FORWARD_LOOKING_LOOPS)
 
 		features['backToSafeZone'] = self.getCashInValue(myPos, gameState, myState)
 		
+		if self.shouldRunHome(gameState):
+			features['backToSafeZone'] = self.getMazeDistance(self.start, myPos) * 10000
+
 		return features
 
 	def getWeights(self):
@@ -401,7 +416,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				self.observeOneOpponent(gameState, opponent)
 		else: # Opponent indices are different in initialize() than anywhere else for some reason
 			self.initializeBeliefs(gameState)
-		self.displayDistributionsOverPositions(beliefs)
+		if DEBUG:
+			self.displayDistributionsOverPositions(beliefs)
 
 	def observeOneOpponent(self, gameState, opponentIndex):
 		noisyDistance = gameState.getAgentDistances()[opponentIndex]
@@ -431,6 +447,15 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				allPossible[p] = 0
 		allPossible.normalize()
 		beliefs[opponentIndex] = allPossible
+
+	def getLegalActionModifier(self, gameState, numLoops):
+		legalActions = self.getLegalActions(gameState)
+		numActions = len(legalActions)
+		for legalAction in legalActions:
+			if numLoops > 0:
+				newState = self.getSuccessor(gameState, legalAction)
+				numActions += self.getLegalActionModifier(newState, numLoops - 1)
+		return numActions
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
