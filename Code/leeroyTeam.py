@@ -77,8 +77,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		# Compute distance to the nearest food
 		# uses leeroy distance so its prioritizes either top or bottom food
 		if len(foodList) > 0: # This should always be True,  but better safe than sorry
-				leeroyDistance = min([self.getLeeroyDistance(myPos, food) for food in foodList])
-				features['leeroyDistanceToFood'] = leeroyDistance
+			leeroyDistance = min([self.getLeeroyDistance(myPos, food) for food in foodList])
+			features['leeroyDistanceToFood'] = leeroyDistance
 			
 		# If we are on our side
 		onDefense = not myState.isPacman
@@ -89,11 +89,11 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		nonScaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and not a.scaredTimer > 0]
 		scaredGhosts = [a for a in enemies if not a.isPacman and a.getPosition() != None and a.scaredTimer > 0]
 		if len(nonScaredGhosts) > 0:
-				# Computes distance to enemy ghosts we can see
-				dists = [self.getMazeDistance(myPos, a.getPosition()) for a in nonScaredGhosts]
-				# Use the smallest distance
-				smallestDist = min(dists)
-				features['ghostDistance'] = smallestDist
+			# Computes distance to enemy ghosts we can see
+			dists = [self.getMazeDistance(myPos, a.getPosition()) for a in nonScaredGhosts]
+			# Use the smallest distance
+			smallestDist = min(dists)
+			features['ghostDistance'] = smallestDist
 
 		features['powerPelletValue'] = self.getPowerPelletValue(myPos, successor, scaredGhosts)
 		features['chaseEnemyValue'] = self.getChaseEnemyWeight(myPos, enemyPacmen)
@@ -132,7 +132,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		return self.weights
 
 	def getLeeroyDistance(self, myPos, food):
-			return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
+		return self.getMazeDistance(myPos, food) + abs(self.favoredY - food[1])
 
 	def getPowerPelletValue(self, myPos, successor, scaredGhosts):
 		powerPellets = self.getCapsules(successor)
