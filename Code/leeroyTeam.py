@@ -102,9 +102,9 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		legalActions = self.getLegalActions(gameState)
 		features['legalActions'] = len(legalActions)
 		for legalAction in legalActions:
-				newState = self.getSuccessor(gameState, legalAction).getAgentState(self.index)
-				possibleNewActions = Actions.getPossibleActions( newState.configuration, gameState.data.layout.walls )
-				features['legalActions'] += len(possibleNewActions)
+			newState = self.getSuccessor(gameState, legalAction).getAgentState(self.index)
+			possibleNewActions = self.getLegalActions(newState)
+			features['legalActions'] += len(possibleNewActions)
 
 		features['backToSafeZone'] = self.getCashInValue(myPos, gameState, myState)
 		
