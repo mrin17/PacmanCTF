@@ -21,7 +21,7 @@ TODOs that will fix this code, currently it loses every time to the baselineTeam
 - account for that noisyDistance thing in our ghost distance formula
 '''
 
-DEBUG = False
+DEBUG = True
 DEFENSE_TIMER_MAX = 100.0
 
 beliefs = []
@@ -201,21 +201,15 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 	def observeOneOpponent(self, gameState, opponentIndex):
 		noisyDistance = gameState.getAgentDistances()[opponentIndex]
 		pacmanPosition = gameState.getAgentPosition(self.index)
-
-		"*** YOUR CODE HERE ***"
 		allPossible = util.Counter()
+		# We might have a definite position for the agent - if so, no need to do calcs
 		maybeDefinitePosition = gameState.getAgentPosition(opponentIndex)
 		if maybeDefinitePosition != None:
 			allPossible[maybeDefinitePosition] = 1
 			beliefs[opponentIndex] = allPossible
 			return
-		ghostIsEaten = False # We don't care if ghost is eaten (noisyDistance == None) # Check if we just ate the ghost
 		for p in self.getLegalPositions(gameState):
-			# For each legal ghost position
-			if ghostIsEaten: # If the ghost was eaten set its probability to 0
-				allPossible[p] = 0
-				continue
-			# Otherwise calculate distance to that ghost
+			# For each legal ghost position, calculate distance to that ghost
 			trueDistance = util.manhattanDistance(p, pacmanPosition)
 			modelProb = gameState.getDistanceProb(trueDistance, noisyDistance) # Find the probability of getting this noisyDistance if the ghost is at this position
 			if modelProb > 0:
@@ -225,15 +219,11 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				# p(noisy) is 1 - we know that for certain.
 				# So return p(true | noisy) * p(true)
 				oldProb = beliefs[opponentIndex][p]
+				# Add a small constant to oldProb because a ghost may travel more than
+				# 13 spaces - if that happens then we don't want to think it's prob is 0
 				allPossible[p] = (oldProb + .0001) * modelProb
 			else:
 				allPossible[p] = 0
-				
-		if ghostIsEaten:
-			# If the ghost was eaten it's definitely in jail
-			allPossible[self.getJailPosition()] = 1
-
-		"*** END YOUR CODE HERE ***"
 
 		allPossible.normalize()
 		beliefs[opponentIndex] = allPossible
