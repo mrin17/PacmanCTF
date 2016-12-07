@@ -145,15 +145,15 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		else:
 			return 0
 
-  def getChaseEnemyWeight(self, myPos, enemyPacmen):
-  	if len(enemyPacmen) > 0:
-        # Computes distance to enemy pacmen we can see
-		dists = [self.getMazeDistance(myPos, enemy.getPosition()) for enemy in enemyPacmen]
-        # Use the smallest distance
-		if len(dists) > 0:
-			smallestDist = min(dists)
-			return smallestDist
-	return 0
+	def getChaseEnemyWeight(self, myPos, enemyPacmen):
+		if len(enemyPacmen) > 0:
+			# Computes distance to enemy pacmen we can see
+			dists = [self.getMazeDistance(myPos, enemy.getPosition()) for enemy in enemyPacmen]
+			# Use the smallest distance
+			if len(dists) > 0:
+				smallestDist = min(dists)
+				return smallestDist
+		return 0
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
