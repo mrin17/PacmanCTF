@@ -11,6 +11,7 @@ from game import Actions
 #################
 
 DEBUG = False
+interestingValues = {}
 
 def createTeam(firstIndex, secondIndex, isRed,
 				first = 'ApproximateQAgent', second = 'ApproximateQAgent', **args):
@@ -28,6 +29,8 @@ def createTeam(firstIndex, secondIndex, isRed,
 	any extra arguments, so you should make sure that the default
 	behavior is what you want for the nightly contest.
 	"""
+	if 'numTraining' in args:
+		interestingValues['numTraining'] = args['numTraining']
 	return [eval(first)(firstIndex), eval(second)(secondIndex)]	
 
 class ApproximateQAgent(CaptureAgent):
@@ -36,6 +39,8 @@ class ApproximateQAgent(CaptureAgent):
 		CaptureAgent.__init__(self, index)
 		self.weights = util.Counter()
 		self.numTraining = 0
+		if 'numTraining' in interestingValues:
+			self.numTraining = interestingValues['numTraining']
 		self.episodesSoFar = 0
 		self.epsilon = 0.05
 		self.discount = 0.8
