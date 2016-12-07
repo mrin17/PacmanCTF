@@ -53,9 +53,9 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		returns list of legal actions for Pacman in the given state
 		"""
 		currentPos = gameState.getAgentState(self.index).getPosition()
-		if currentPos not in self.getLegalActionMap:
-			self.getLegalActionMap[currentPos] = gameState.getLegalActions(self.index)
-		return self.getLegalActionMap[currentPos]
+		if currentPos not in self.legalActionMap:
+			self.legalActionMap[currentPos] = gameState.getLegalActions(self.index)
+		return self.legalActionMap[currentPos]
 
 	def getFeatures(self, gameState, action):
 		features = util.Counter()
@@ -99,7 +99,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		
 		# The total of the legalActions you can take from where you are AND
 		# The legalActions you can take in all future states
-		legalActions = self.getLegalActionMap(gameState)
+		legalActions = self.getLegalActions(gameState)
 		features['legalActions'] = len(legalActions)
 		for legalAction in legalActions:
 				newState = self.getSuccessor(gameState, legalAction).getAgentState(self.index)
@@ -120,16 +120,16 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		powerPellets = self.getCapsules(successor)
 		minDistance = 0
 		if len(powerPellets) > 0 and len(scaredGhosts) == 0:
-		distances = [self.getMazeDistance(myPos, pellet) for pellet in powerPellets]
-		minDistance = min(distances)
-	return max(self.distanceToTrackPowerPelletValue - minDistance, 0)
+			distances = [self.getMazeDistance(myPos, pellet) for pellet in powerPellets]
+			minDistance = min(distances)
+		return max(self.distanceToTrackPowerPelletValue - minDistance, 0)
 
 	def getCashInValue(self, myPos, gameState, myState):
 		# if we have enough pellets, attempt to cash in
 		if myState.numCarrying >= self.minPelletsToCashIn:
 			return self.getMazeDistance(self.start, myPos)
 		else:
-		return 0
+			return 0
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
