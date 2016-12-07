@@ -20,6 +20,10 @@ TODOs that will fix this code, currently it loses every time to the baselineTeam
 - make it go back to its own side every once in a while to 'cash in' the pellets it has
 - account for that noisyDistance thing in our ghost distance formula
 '''
+
+DEBUG = False
+DEFENSE_TIMER_MAX = 100.0
+
 def createTeam(firstIndex, secondIndex, isRed,
                first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent', **args):
   return [eval(first)(firstIndex), eval(second)(secondIndex)]
@@ -29,6 +33,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   def registerInitialState(self, gameState):
     ApproximateQAgent.registerInitialState(self, gameState)
     self.favoredY = 0.0
+    self.defenseTimer = 0.0
+    self.lastNumReturnedPellets = 0.0
 
   def __init__( self, index ):
   	ApproximateQAgent.__init__(self, index)
@@ -41,10 +47,11 @@ class LeeroyCaptureAgent(ApproximateQAgent):
   	self.distanceToTrackPowerPelletValue = 3
   	self.weights['backToSafeZone'] = -1
   	self.minPelletsToCashIn = 8
-  	self.weights['chaseEnemyValue'] = 100
-  	self.chaseEnemyDistance = 3
-  	print "INITIAL WEIGHTS"
-  	print self.weights
+  	self.weights['chaseEnemyValue'] = -100
+  	self.chaseEnemyDistance = 5
+  	if DEBUG:
+  		print "INITIAL WEIGHTS"
+  		print self.weights
   
   def getFeatures(self, gameState, action):
     features = util.Counter()
@@ -83,6 +90,15 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 
     features['powerPelletValue'] = self.getPowerPelletValue(myPos, successor, scaredGhosts)
     features['chaseEnemyValue'] = self.getChaseEnemyWeight(myPos, enemyPacmen)
+
+    # If we returned any pellets, we shift over to defense mode for a time
+    if myState.numReturned != self.lastNumReturnedPellets:
+		self.defenseTimer = DEFENSE_TIMER_MAX
+    self.lastNumReturnedPellets = myState.numReturned
+    # If on defense, heavily value chasing after enemies
+    if self.defenseTimer > 0:
+		self.defenseTimer -= 1
+		features['chaseEnemyValue'] *= 100
 
     # Heavily prioritize not stopping
     if action == Directions.STOP: 
@@ -129,8 +145,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
         # Use the smallest distance
 		if len(dists) > 0:
 			smallestDist = min(dists)
-			if smallestDist <= self.chaseEnemyDistance:
-				return self.chaseEnemyDistance - smallestDist + 1
+			return smallestDist
 	return 0
 
 # Leeroy Top Agent - favors pellets with a higher y
