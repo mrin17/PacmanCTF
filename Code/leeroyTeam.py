@@ -23,6 +23,7 @@ interestingValues = {}
 MINIMUM_PROBABILITY = .0001
 beliefs = []
 beliefsInitialized = []
+FORWARD_LOOKING_LOOPS = 1
 
 def createTeam(firstIndex, secondIndex, isRed,
 							 first = 'LeeroyTopAgent', second = 'LeeroyBottomAgent', **args):
@@ -332,12 +333,8 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		
 		# The total of the legalActions you can take from where you are AND
 		# The legalActions you can take in all future states
-		legalActions = self.getLegalActions(gameState)
-		features['legalActions'] = len(legalActions)
-		for legalAction in legalActions:
-			newState = self.getSuccessor(gameState, legalAction)
-			possibleNewActions = self.getLegalActions(newState)
-			features['legalActions'] += len(possibleNewActions)
+		# It depends on how many loops we do
+		features['legalActions'] = self.getLegalActionModifier(gameState, FORWARD_LOOKING_LOOPS)
 
 		features['backToSafeZone'] = self.getCashInValue(myPos, gameState, myState)
 		
@@ -423,6 +420,15 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 				allPossible[p] = 0
 		allPossible.normalize()
 		beliefs[opponentIndex] = allPossible
+
+	def getLegalActionModifier(self, gameState, numLoops):
+		legalActions = self.getLegalActions(gameState)
+		numActions = len(legalActions)
+		for legalAction in legalActions:
+			if numLoops > 0:
+				newState = self.getSuccessor(gameState, legalAction)
+				numActions += self.getLegalActionModifier(newState, numLoops - 1)
+		return numActions
 
 # Leeroy Top Agent - favors pellets with a higher y
 class LeeroyTopAgent(LeeroyCaptureAgent):
