@@ -254,6 +254,7 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		self.minPelletsToCashIn = 8
 		self.weights['chaseEnemyValue'] = -100
 		self.chaseEnemyDistance = 5
+		self.threatenedDistance = 5
 		# dictionary of (position) -> [action, ...]
 		# populated as we go along; to use this, call self.getLegalActions(gameState)
 		self.legalActionMap = {}
@@ -362,6 +363,9 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 
 		features['backToSafeZone'] = self.getCashInValue(myPos, gameState, myState)
 		
+		# Adding value for going back home
+		features['backToSafeZone'] += self.getBackToStartDistance(myPos, features['ghostDistance'])
+
 		if self.shouldRunHome(gameState):
 			features['backToSafeZone'] = self.getMazeDistance(self.start, myPos) * 10000
 
@@ -387,6 +391,12 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 			return self.getMazeDistance(self.start, myPos)
 		else:
 			return 0
+
+	def getBackToStartDistance(self, myPos, smallestGhostPosition):
+		if smallestGhostPosition > self.threatenedDistance or smallestGhostPosition == 0:
+			return 0
+		else:
+			return self.getMazeDistance(self.start, myPos) * 1000
 
 	def getChaseEnemyWeight(self, myPos, enemyPacmen):
 		if len(enemyPacmen) > 0:
