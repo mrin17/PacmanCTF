@@ -18,6 +18,7 @@ Eventually they will converge in the middle
 
 DEBUG = False
 DEFENSE_TIMER_MAX = 100.0
+USE_BELIEF_DISTANCE = True
 interestingValues = {}
 
 MINIMUM_PROBABILITY = .0001
@@ -325,7 +326,10 @@ class LeeroyCaptureAgent(ApproximateQAgent):
 		for index in self.getOpponents(successor):
 			enemy = successor.getAgentState(index)
 			if enemy in nonScaredGhosts:
-				dists.append(self.getMazeDistance(myPos, self.getMostLikelyGhostPosition(index)))
+				if USE_BELIEF_DISTANCE:
+					dists.append(self.getMazeDistance(myPos, self.getMostLikelyGhostPosition(index)))
+				else:
+					dists.append(self.getMazeDistance(myPos, enemy.getPosition()))
 		# Use the smallest distance
 		if len(dists) > 0:
 			smallestDist = min(dists)
